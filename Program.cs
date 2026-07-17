@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using URLShortner.API.Data;
+using URLShortner.API.Interfaces;
+using URLShortner.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +13,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<UrlShortnerDbContext>(option=> option.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddSingleton<IShortCodeGenerator, ShortCodeGenerator>();
+builder.Services.AddScoped<IUrlService, UrlService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

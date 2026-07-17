@@ -7,7 +7,7 @@ public partial class Url
 {
     public int Id { get; set; }
 
-    public string OrginalUrl { get; set; } = null!;
+    public string OriginalUrl { get; set; } = null!;
 
     public string ShortCode { get; set; } = null!;
 

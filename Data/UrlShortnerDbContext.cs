@@ -27,10 +27,8 @@ public partial class UrlShortnerDbContext : DbContext
             entity.HasIndex(e => e.ShortCode, "URLs_Short_Code_key").IsUnique();
 
             entity.Property(e => e.ClickCount).HasDefaultValue(0);
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp without time zone");
-            entity.Property(e => e.OrginalUrl).HasColumnType("citext");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.OriginalUrl).HasColumnType("citext");
             entity.Property(e => e.ShortCode)
                 .HasMaxLength(10)
                 .HasColumnName("Short_Code");
