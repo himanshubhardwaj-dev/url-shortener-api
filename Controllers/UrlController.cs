@@ -20,5 +20,15 @@ namespace URLShortner.API.Controllers
             var response = await _urlService.CreateAsync(requestDto);
             return Created(response.ShortUrl, response);
         }
+        [HttpGet("{shortCode}")]
+        public async Task<IActionResult> RedirectToUrl(string shortCode)
+        {
+            var url = await _urlService.ResolveShortCodeAsync(shortCode);
+
+            if (url == null)
+                return NotFound();
+
+            return Redirect(url.OriginalUrl);
+        }
     }
 }

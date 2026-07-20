@@ -44,5 +44,18 @@ namespace URLShortner.API.Services
             };
 
         }
+        public async Task<Url?> ResolveShortCodeAsync(string shortCode)
+        {
+            var url  =  await _context.Urls.SingleOrDefaultAsync(ur=> ur.ShortCode == shortCode);
+            if (url == null)
+                return null;
+
+            url.ClickCount++;
+
+            await _context.SaveChangesAsync();
+
+            return url;
+
+        }
     }
 }
