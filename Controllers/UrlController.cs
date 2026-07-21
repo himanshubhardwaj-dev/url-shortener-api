@@ -18,6 +18,7 @@ namespace URLShortner.API.Controllers
         public async Task<IActionResult> Create(CreateShortUrlRequestDto requestDto)
         {
             var response = await _urlService.CreateAsync(requestDto);
+            response.ShortUrl = $"{Request.Scheme}://{Request.Host}/api/url/{response.ShortCode}";
             return Created(response.ShortUrl, response);
         }
         [HttpGet("{shortCode}")]
@@ -29,6 +30,29 @@ namespace URLShortner.API.Controllers
                 return NotFound();
 
             return Redirect(url.OriginalUrl);
+        }
+        [HttpDelete("{shortCode}")]
+        public async Task<IActionResult> Delete(string shortCode)
+        {
+            var Deleted = await _urlService.DeleteAsync(shortCode);
+            if (!Deleted)
+                return NotFound();
+
+            return NoContent();
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetAll(int pageNumber = 1, int pageSize = 10)
+        {
+            if(pageNumber < 1)
+            {
+                return BadRequest("Page Number must be greater than 0.");
+            }
+            if(pageSize < 1 || pageSize > 100)
+            {
+                return BadRequest("Page size must be between 1 and 100");
+            }
+            var response = await _urlService.GetAllAsync(pageNumber, pageSize);
+            return Ok(response);
         }
     }
 }

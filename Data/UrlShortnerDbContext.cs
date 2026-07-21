@@ -28,6 +28,9 @@ public partial class UrlShortnerDbContext : DbContext
 
             entity.Property(e => e.ClickCount).HasDefaultValue(0);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false)
+                .HasColumnName("isDeleted");
             entity.Property(e => e.OriginalUrl).HasColumnType("citext");
             entity.Property(e => e.ShortCode)
                 .HasMaxLength(10)

@@ -7,5 +7,9 @@ namespace URLShortner.API.Interfaces
     {
         Task<CreateShortUrlResponseDto> CreateAsync(CreateShortUrlRequestDto request);
         Task<Url?> ResolveShortCodeAsync(string shortCode);
+
+        Task<bool> DeleteAsync(string shortCode);
+
+        Task<PagedResponseDto<UrlListItemDto>> GetAllAsync(int pageNumber, int pageSize);
     }
 }

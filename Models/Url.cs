@@ -14,4 +14,8 @@ public partial class Url
     public DateTime CreatedAt { get; set; }
 
     public int ClickCount { get; set; }
+
+    public bool IsDeleted { get; set; }
+
+    public DateTime? DeletedAt { get; set; }
 }

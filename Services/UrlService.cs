@@ -1,8 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.EntityFrameworkCore;
 using URLShortner.API.Data;
 using URLShortner.API.DTOs;
 using URLShortner.API.Interfaces;
 using URLShortner.API.Models;
+using static System.Net.WebRequestMethods;
 
 namespace URLShortner.API.Services
 {
@@ -19,6 +21,17 @@ namespace URLShortner.API.Services
 
         public async Task<CreateShortUrlResponseDto> CreateAsync(CreateShortUrlRequestDto request)
         {
+            var existingUrl = await _context.Urls.FirstOrDefaultAsync(ur => ur.OriginalUrl == request.OriginalUrl && !ur.IsDeleted);
+            if (existingUrl != null)
+            {
+                return new CreateShortUrlResponseDto
+                {
+                    OriginalUrl = existingUrl.OriginalUrl,
+                    ShortCode = existingUrl.ShortCode,
+                    CreatedAt = existingUrl.CreatedAt
+                };
+
+            }
             string shortCode = _shortCodeGenerator.Generate();
             bool exists = await _context.Urls.AnyAsync(u => u.ShortCode == shortCode);
             while (exists)
@@ -35,18 +48,33 @@ namespace URLShortner.API.Services
             };
             _context.Urls.Add(url);
             await _context.SaveChangesAsync();
-            return new CreateShortUrlResponseDto 
+            return new CreateShortUrlResponseDto
             {
                 OriginalUrl = url.OriginalUrl,
                 ShortCode = url.ShortCode,
-                ShortUrl = $"https://localhost:7236/{url.ShortCode}",
                 CreatedAt = url.CreatedAt
             };
 
         }
+
+        public async Task<bool> DeleteAsync(string shortCode)
+        {
+            var ExistUrl = await _context.Urls.FirstOrDefaultAsync(ur => ur.ShortCode == shortCode && !ur.IsDeleted);
+
+            if (ExistUrl == null)
+                return false;
+
+            ExistUrl.IsDeleted = true;
+            ExistUrl.DeletedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+
+
         public async Task<Url?> ResolveShortCodeAsync(string shortCode)
         {
-            var url  =  await _context.Urls.SingleOrDefaultAsync(ur=> ur.ShortCode == shortCode);
+            var url = await _context.Urls.SingleOrDefaultAsync(ur => ur.ShortCode == shortCode && !ur.IsDeleted);
             if (url == null)
                 return null;
 
@@ -56,6 +84,30 @@ namespace URLShortner.API.Services
 
             return url;
 
+        }
+        public async Task<PagedResponseDto<UrlListItemDto>> GetAllAsync(int pageNumber, int pageSize)
+        {
+            var query = _context.Urls.AsNoTracking().Where(ur => !ur.IsDeleted);
+            var totalRecords = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
+            var item = await query.OrderByDescending(ur => ur.CreatedAt)
+                                 .Skip((pageNumber - 1) * pageSize)
+                                 .Take(pageSize)
+                                 .Select(u => new UrlListItemDto
+                                 {
+                                     OriginalUrl = u.OriginalUrl,
+                                     ShortCode = u.ShortCode,
+                                     ClickCount = u.ClickCount,
+                                     CreatedAt = u.CreatedAt
+                                 }).ToListAsync();
+            return new PagedResponseDto<UrlListItemDto>
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalRecords = totalRecords,
+                TotalPages = totalPages,
+                Items = item
+            };
         }
     }
 }
