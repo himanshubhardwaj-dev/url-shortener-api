@@ -21,14 +21,19 @@ namespace URLShortner.API.Services
 
         public async Task<CreateShortUrlResponseDto> CreateAsync(CreateShortUrlRequestDto request)
         {
-            var existingUrl = await _context.Urls.FirstOrDefaultAsync(ur => ur.OriginalUrl == request.OriginalUrl && !ur.IsDeleted);
+            if (request.ExpiresAt.HasValue && request.ExpiresAt.Value <= DateTime.UtcNow)
+            {
+                throw new ArgumentException("Expiration Date must be in the future", nameof(request.ExpiresAt));
+            }
+            var existingUrl = await _context.Urls.FirstOrDefaultAsync(ur => ur.OriginalUrl == request.OriginalUrl && !ur.IsDeleted && ur.ExpiresAt == request.ExpiresAt);
             if (existingUrl != null)
             {
                 return new CreateShortUrlResponseDto
                 {
                     OriginalUrl = existingUrl.OriginalUrl,
                     ShortCode = existingUrl.ShortCode,
-                    CreatedAt = existingUrl.CreatedAt
+                    CreatedAt = existingUrl.CreatedAt,
+                    ExpiresAt = existingUrl.ExpiresAt
                 };
 
             }
@@ -44,7 +49,8 @@ namespace URLShortner.API.Services
                 OriginalUrl = request.OriginalUrl,
                 ShortCode = shortCode,
                 CreatedAt = DateTime.UtcNow,
-                ClickCount = 0
+                ClickCount = 0,
+                ExpiresAt = request.ExpiresAt
             };
             _context.Urls.Add(url);
             await _context.SaveChangesAsync();
@@ -52,7 +58,8 @@ namespace URLShortner.API.Services
             {
                 OriginalUrl = url.OriginalUrl,
                 ShortCode = url.ShortCode,
-                CreatedAt = url.CreatedAt
+                CreatedAt = url.CreatedAt,
+                ExpiresAt = url.ExpiresAt
             };
 
         }
@@ -77,7 +84,10 @@ namespace URLShortner.API.Services
             var url = await _context.Urls.SingleOrDefaultAsync(ur => ur.ShortCode == shortCode && !ur.IsDeleted);
             if (url == null)
                 return null;
-
+            if (url.ExpiresAt.HasValue && url.ExpiresAt.Value <= DateTime.UtcNow)
+            {
+                return null;
+            }
             url.ClickCount++;
 
             await _context.SaveChangesAsync();

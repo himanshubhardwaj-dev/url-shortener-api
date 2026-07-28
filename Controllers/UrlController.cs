@@ -17,25 +17,23 @@ namespace URLShortner.API.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(CreateShortUrlRequestDto requestDto)
         {
-            var response = await _urlService.CreateAsync(requestDto);
-            response.ShortUrl = $"{Request.Scheme}://{Request.Host}/api/url/{response.ShortCode}";
-            return Created(response.ShortUrl, response);
-        }
-        [HttpGet("{shortCode}")]
-        public async Task<IActionResult> RedirectToUrl(string shortCode)
-        {
-            var url = await _urlService.ResolveShortCodeAsync(shortCode);
+            try
+            {
 
-            if (url == null)
-                return NotFound();
-
-            return Redirect(url.OriginalUrl);
+                var response = await _urlService.CreateAsync(requestDto);
+                response.ShortUrl = $"{Request.Scheme}://{Request.Host}/{response.ShortCode}";
+                return Created(response.ShortUrl, response);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
         [HttpDelete("{shortCode}")]
         public async Task<IActionResult> Delete(string shortCode)
         {
-            var Deleted = await _urlService.DeleteAsync(shortCode);
-            if (!Deleted)
+            var deleted = await _urlService.DeleteAsync(shortCode);
+            if (!deleted)
                 return NotFound();
 
             return NoContent();

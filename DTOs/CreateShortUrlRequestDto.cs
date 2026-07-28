@@ -7,5 +7,6 @@ namespace URLShortner.API.DTOs
         [Required]
         [Url]
         public string OriginalUrl { get; set; } = string.Empty;
+        public DateTime? ExpiresAt { get; set; }
     }
 }

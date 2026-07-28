@@ -18,4 +18,6 @@ public partial class Url
     public bool IsDeleted { get; set; }
 
     public DateTime? DeletedAt { get; set; }
+
+    public DateTime? ExpiresAt { get; set; }
 }
