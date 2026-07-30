@@ -14,6 +14,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<UrlShortnerDbContext>(option=> option.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddSingleton<IShortCodeGenerator, ShortCodeGenerator>();
+builder.Services.AddSingleton<IQRCodeService, QRCodeService>();
 builder.Services.AddScoped<IUrlService, UrlService>();
 var app = builder.Build();
 
@@ -25,6 +26,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseStaticFiles();
 
 app.UseAuthorization();
 

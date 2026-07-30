@@ -10,9 +10,11 @@ namespace URLShortner.API.Controllers
     public class UrlController : ControllerBase
     {
         private readonly IUrlService _urlService;
-        public UrlController(IUrlService urlService)
+        private readonly IQRCodeService _qRCodeService;
+        public UrlController(IUrlService urlService, IQRCodeService qRCodeService)
         {
             _urlService = urlService;
+            _qRCodeService = qRCodeService;
         }
         [HttpPost]
         public async Task<IActionResult> Create(CreateShortUrlRequestDto requestDto)
@@ -51,6 +53,18 @@ namespace URLShortner.API.Controllers
             }
             var response = await _urlService.GetAllAsync(pageNumber, pageSize);
             return Ok(response);
+        }
+        [HttpGet("{shortCode}/qrcode")]
+        public async Task<IActionResult> GetQrCode(string shortCode)
+        {
+            var url = await _urlService.GetByShortCodeAsync(shortCode);
+            if(url == null)
+            {
+                return NotFound();
+            }
+            var shortUrl = $"{Request.Scheme}://{Request.Host}/{url.ShortCode}";
+            var qrCodeBytes = await _qRCodeService.GetorCreateQRCodeAsync(url.ShortCode, shortUrl);
+            return File(qrCodeBytes, "image/png");
         }
     }
 }

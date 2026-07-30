@@ -119,5 +119,9 @@ namespace URLShortner.API.Services
                 Items = item
             };
         }
+        public async Task<Url?> GetByShortCodeAsync(string shortCode)
+        {
+            return await _context.Urls.FirstOrDefaultAsync(u => u.ShortCode == shortCode && !u.IsDeleted && (!u.ExpiresAt.HasValue || u.ExpiresAt > DateTime.UtcNow));
+        }
     }
 }
