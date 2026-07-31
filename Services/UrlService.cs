@@ -123,5 +123,18 @@ namespace URLShortner.API.Services
         {
             return await _context.Urls.FirstOrDefaultAsync(u => u.ShortCode == shortCode && !u.IsDeleted && (!u.ExpiresAt.HasValue || u.ExpiresAt > DateTime.UtcNow));
         }
+
+        public async Task<UrlAnalyticsDto?> GetAnalyticsAsync(string shortCode)
+        {
+            return await _context.Urls.Where(u => u.ShortCode == shortCode).Select(u => new UrlAnalyticsDto
+            {
+                OriginalUrl = u.OriginalUrl,
+                ShortCode = u.ShortCode,
+                ClickCount = u.ClickCount,
+                CreatedAt = u.CreatedAt,
+                ExpireAt = u.ExpiresAt,
+                isDeleted = u.IsDeleted
+            }).FirstOrDefaultAsync();
+        }
     }
 }

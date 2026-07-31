@@ -12,5 +12,6 @@ namespace URLShortner.API.Interfaces
 
         Task<PagedResponseDto<UrlListItemDto>> GetAllAsync(int pageNumber, int pageSize);
         Task<Url?> GetByShortCodeAsync(string shortCode);
+        Task<UrlAnalyticsDto?> GetAnalyticsAsync(string shortCode);
     }
 }

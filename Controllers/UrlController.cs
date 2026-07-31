@@ -43,11 +43,11 @@ namespace URLShortner.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll(int pageNumber = 1, int pageSize = 10)
         {
-            if(pageNumber < 1)
+            if (pageNumber < 1)
             {
                 return BadRequest("Page Number must be greater than 0.");
             }
-            if(pageSize < 1 || pageSize > 100)
+            if (pageSize < 1 || pageSize > 100)
             {
                 return BadRequest("Page size must be between 1 and 100");
             }
@@ -58,13 +58,24 @@ namespace URLShortner.API.Controllers
         public async Task<IActionResult> GetQrCode(string shortCode)
         {
             var url = await _urlService.GetByShortCodeAsync(shortCode);
-            if(url == null)
+            if (url == null)
             {
                 return NotFound();
             }
             var shortUrl = $"{Request.Scheme}://{Request.Host}/{url.ShortCode}";
             var qrCodeBytes = await _qRCodeService.GetorCreateQRCodeAsync(url.ShortCode, shortUrl);
             return File(qrCodeBytes, "image/png");
+        }
+        [HttpGet("{shortCode}/analytics")]
+        public async Task<IActionResult> GetAnalytics(string shortCode)
+        {
+            var analytics = await _urlService.GetAnalyticsAsync(shortCode);
+                if(analytics == null)
+            {
+                return NotFound();
+            }
+            analytics.ShortUrl = $"{Request.Scheme}://{Request.Host}/{analytics.ShortCode}";
+            return Ok(analytics);
         }
     }
 }
