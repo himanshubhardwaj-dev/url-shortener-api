@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using URLShortner.API.Data;
 using URLShortner.API.Interfaces;
 using URLShortner.API.Services;
+using URLShortner.API.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +16,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<UrlShortnerDbContext>(option=> option.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddSingleton<IShortCodeGenerator, ShortCodeGenerator>();
 builder.Services.AddSingleton<IQRCodeService, QRCodeService>();
+builder.Services.Configure<ShortCodeOptions>(builder.Configuration.GetSection("ShortCode"));
 builder.Services.AddScoped<IUrlService, UrlService>();
 var app = builder.Build();
 

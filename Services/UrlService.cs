@@ -5,6 +5,8 @@ using URLShortner.API.DTOs;
 using URLShortner.API.Interfaces;
 using URLShortner.API.Models;
 using static System.Net.WebRequestMethods;
+using URLShortner.API.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace URLShortner.API.Services
 {
@@ -13,10 +15,12 @@ namespace URLShortner.API.Services
 
         private readonly UrlShortnerDbContext _context;
         private readonly IShortCodeGenerator _shortCodeGenerator;
-        public UrlService(UrlShortnerDbContext context, IShortCodeGenerator shortCodeGenerator)
+        private readonly ShortCodeOptions _shortCodeOptions;
+        public UrlService(UrlShortnerDbContext context, IShortCodeGenerator shortCodeGenerator, IOptions<ShortCodeOptions> shortCodeOptions)
         {
             _context = context;
             _shortCodeGenerator = shortCodeGenerator;
+            _shortCodeOptions = shortCodeOptions.Value;
         }
 
         public async Task<CreateShortUrlResponseDto> CreateAsync(CreateShortUrlRequestDto request)
@@ -25,25 +29,50 @@ namespace URLShortner.API.Services
             {
                 throw new ArgumentException("Expiration Date must be in the future", nameof(request.ExpiresAt));
             }
-            var existingUrl = await _context.Urls.FirstOrDefaultAsync(ur => ur.OriginalUrl == request.OriginalUrl && !ur.IsDeleted && ur.ExpiresAt == request.ExpiresAt);
-            if (existingUrl != null)
+            if (!string.IsNullOrWhiteSpace(request.CustomShortCode))
             {
-                return new CreateShortUrlResponseDto
-                {
-                    OriginalUrl = existingUrl.OriginalUrl,
-                    ShortCode = existingUrl.ShortCode,
-                    CreatedAt = existingUrl.CreatedAt,
-                    ExpiresAt = existingUrl.ExpiresAt
-                };
-
+                request.CustomShortCode = request.CustomShortCode.ToLowerInvariant();
             }
-            string shortCode = _shortCodeGenerator.Generate();
-            bool exists = await _context.Urls.AnyAsync(u => u.ShortCode == shortCode);
-            while (exists)
+            if (!string.IsNullOrWhiteSpace(request.CustomShortCode) && _shortCodeOptions.ReservedShortCode.Any(code => code.Equals(request.CustomShortCode, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new ArgumentException("The short code is reserved");
+            }
+            if (string.IsNullOrWhiteSpace(request.CustomShortCode))
+            {
+                var existingUrl = await _context.Urls.FirstOrDefaultAsync(ur => ur.OriginalUrl == request.OriginalUrl && !ur.IsDeleted);
+                if (existingUrl != null)
+                {
+                    return new CreateShortUrlResponseDto
+                    {
+                        OriginalUrl = existingUrl.OriginalUrl,
+                        ShortCode = existingUrl.ShortCode,
+                        CreatedAt = existingUrl.CreatedAt,
+                        ExpiresAt = existingUrl.ExpiresAt
+                    };
+
+                }
+            }
+
+            string shortCode;
+            if (!string.IsNullOrWhiteSpace(request.CustomShortCode))
+            {
+                shortCode = request.CustomShortCode;
+                bool exists = await _context.Urls.AnyAsync(u => u.ShortCode == shortCode);
+                if (exists)
+                {
+                    throw new ArgumentException("Short code already exists.");
+                }
+            }
+            else
             {
                 shortCode = _shortCodeGenerator.Generate();
-                exists = await _context.Urls.AnyAsync(u => u.ShortCode == shortCode);
+                while (await _context.Urls.AnyAsync(u => u.ShortCode == shortCode))
+                {
+                    shortCode = _shortCodeGenerator.Generate();
+                }
             }
+
+
             var url = new Url
             {
                 OriginalUrl = request.OriginalUrl,
