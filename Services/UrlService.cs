@@ -7,6 +7,7 @@ using URLShortner.API.Models;
 using static System.Net.WebRequestMethods;
 using URLShortner.API.Configuration;
 using Microsoft.Extensions.Options;
+using URLShortner.API.Exceptions;
 
 namespace URLShortner.API.Services
 {
@@ -35,7 +36,7 @@ namespace URLShortner.API.Services
             }
             if (!string.IsNullOrWhiteSpace(request.CustomShortCode) && _shortCodeOptions.ReservedShortCode.Any(code => code.Equals(request.CustomShortCode, StringComparison.OrdinalIgnoreCase)))
             {
-                throw new ArgumentException("The short code is reserved");
+                throw new ReservedShortCodeException(request.CustomShortCode);
             }
             if (string.IsNullOrWhiteSpace(request.CustomShortCode))
             {
@@ -60,7 +61,7 @@ namespace URLShortner.API.Services
                 bool exists = await _context.Urls.AnyAsync(u => u.ShortCode == shortCode);
                 if (exists)
                 {
-                    throw new ArgumentException("Short code already exists.");
+                    throw new DuplicateShortCodeException(shortCode);
                 }
             }
             else
