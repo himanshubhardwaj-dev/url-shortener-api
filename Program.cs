@@ -19,6 +19,8 @@ builder.Services.AddSingleton<IShortCodeGenerator, ShortCodeGenerator>();
 builder.Services.AddSingleton<IQRCodeService, QRCodeService>();
 builder.Services.Configure<ShortCodeOptions>(builder.Configuration.GetSection("ShortCode"));
 builder.Services.AddScoped<IUrlService, UrlService>();
+builder.Services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
