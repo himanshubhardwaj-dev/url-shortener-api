@@ -20,5 +20,11 @@ namespace URLShortner.API.Controllers
             var response = await _authService.RegisterAsync(request);
             return Ok(response);
         }
+        [HttpPost("login")]
+        public async Task<ActionResult<LoginResponseDto>> Login(LoginRequestDto request)
+        {
+            var response = await _authService.LoginAsync(request);
+            return Ok(response);
+        }
     }
 }

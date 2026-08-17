@@ -10,11 +10,14 @@ namespace URLShortner.API.Services
     {
         private readonly UrlShortnerDbContext _context;
         private readonly IPasswordHasher _passwordHasher;
-        public AuthService(UrlShortnerDbContext context, IPasswordHasher passwordHasher)
+        private readonly ITokenService _tokenservice;
+        public AuthService(UrlShortnerDbContext context, IPasswordHasher passwordHasher, ITokenService tokenservice)
         {
             _context = context;
             _passwordHasher = passwordHasher;
+            _tokenservice = tokenservice;
         }
+
         public async Task<RegisterResponseDto> RegisterAsync(RegisterRequestDto request)
         {
             request.Email = request.Email.Trim().ToLowerInvariant();
@@ -43,5 +46,36 @@ namespace URLShortner.API.Services
             };
 
         }
+        public async Task<LoginResponseDto> LoginAsync(LoginRequestDto request)
+        {
+            request.Email = request.Email.Trim().ToLowerInvariant();
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+
+            if(user == null)
+            {
+                throw new ArgumentException("Invalid Email or Password");
+            }
+            bool passwordHash = _passwordHasher.verify(request.Password, user.PasswordHash);
+            if (!passwordHash)
+            {
+                throw new ArgumentException("Invalid Email or Password");
+            }
+            if (!user.isActive)
+            {
+                throw new ArgumentException("Invalid Email or Password");
+            }
+            var tokenResult = _tokenservice.GenerateToken(user);
+
+            return new LoginResponseDto
+            {
+                Token = tokenResult.Token,
+                ExpireAt = tokenResult.ExpireAt,
+                UserId = user.Id,
+                Email = user.Email,
+                Role = user.Role
+            };
+        }
+
     }
 }

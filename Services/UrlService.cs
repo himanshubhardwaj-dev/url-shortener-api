@@ -17,11 +17,13 @@ namespace URLShortner.API.Services
         private readonly UrlShortnerDbContext _context;
         private readonly IShortCodeGenerator _shortCodeGenerator;
         private readonly ShortCodeOptions _shortCodeOptions;
-        public UrlService(UrlShortnerDbContext context, IShortCodeGenerator shortCodeGenerator, IOptions<ShortCodeOptions> shortCodeOptions)
+        private readonly ICurrentUserService _currentUser;
+        public UrlService(UrlShortnerDbContext context, IShortCodeGenerator shortCodeGenerator, IOptions<ShortCodeOptions> shortCodeOptions, ICurrentUserService currentUser)
         {
             _context = context;
             _shortCodeGenerator = shortCodeGenerator;
             _shortCodeOptions = shortCodeOptions.Value;
+            _currentUser = currentUser;
         }
 
         public async Task<CreateShortUrlResponseDto> CreateAsync(CreateShortUrlRequestDto request)
@@ -80,7 +82,8 @@ namespace URLShortner.API.Services
                 ShortCode = shortCode,
                 CreatedAt = DateTime.UtcNow,
                 ClickCount = 0,
-                ExpiresAt = request.ExpiresAt
+                ExpiresAt = request.ExpiresAt,
+                UserId = _currentUser.UserId
             };
             _context.Urls.Add(url);
             await _context.SaveChangesAsync();
