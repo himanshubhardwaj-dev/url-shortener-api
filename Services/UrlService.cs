@@ -99,7 +99,7 @@ namespace URLShortner.API.Services
 
         public async Task<bool> DeleteAsync(string shortCode)
         {
-            var ExistUrl = await _context.Urls.FirstOrDefaultAsync(ur => ur.ShortCode == shortCode && !ur.IsDeleted);
+            var ExistUrl = await _context.Urls.FirstOrDefaultAsync(ur => ur.UserId == _currentUser.UserId && ur.ShortCode == shortCode && !ur.IsDeleted);
 
             if (ExistUrl == null)
                 return false;
@@ -130,7 +130,7 @@ namespace URLShortner.API.Services
         }
         public async Task<PagedResponseDto<UrlListItemDto>> GetAllAsync(int pageNumber, int pageSize)
         {
-            var query = _context.Urls.AsNoTracking().Where(ur => !ur.IsDeleted);
+            var query = _context.Urls.AsNoTracking().Where(ur => ur.UserId == _currentUser.UserId && !ur.IsDeleted );
             var totalRecords = await query.CountAsync();
             var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
             var item = await query.OrderByDescending(ur => ur.CreatedAt)
@@ -152,14 +152,10 @@ namespace URLShortner.API.Services
                 Items = item
             };
         }
-        public async Task<Url?> GetByShortCodeAsync(string shortCode)
-        {
-            return await _context.Urls.FirstOrDefaultAsync(u => u.ShortCode == shortCode && !u.IsDeleted && (!u.ExpiresAt.HasValue || u.ExpiresAt > DateTime.UtcNow));
-        }
 
         public async Task<UrlAnalyticsDto?> GetAnalyticsAsync(string shortCode)
         {
-            return await _context.Urls.Where(u => u.ShortCode == shortCode).Select(u => new UrlAnalyticsDto
+            return await _context.Urls.Where(u => u.ShortCode == shortCode && u.UserId == _currentUser.UserId && !u.IsDeleted).Select(u => new UrlAnalyticsDto
             {
                 OriginalUrl = u.OriginalUrl,
                 ShortCode = u.ShortCode,
@@ -168,6 +164,32 @@ namespace URLShortner.API.Services
                 ExpireAt = u.ExpiresAt,
                 isDeleted = u.IsDeleted
             }).FirstOrDefaultAsync();
+        }
+
+        public async Task<bool> UpdateAsync(string shortCode, UpdateShortUrlRequestDto request)
+        {
+            var url = await _context.Urls.FirstOrDefaultAsync(u => u.ShortCode == shortCode && u.UserId == _currentUser.UserId && !u.IsDeleted);
+            if (url == null)
+                return false;
+            if(request.ExpiresAt.HasValue && request.ExpiresAt.Value <= DateTime.UtcNow)
+            {
+                throw new ArgumentException("Expiration Date must be in future.", nameof(request.ExpiresAt));
+            }
+            url.OriginalUrl = request.OriginalUrl;
+            url.ExpiresAt = request.ExpiresAt;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<Url?> GetOwnedByShortAsync(string shortCode)
+        {
+            return await _context.Urls.FirstOrDefaultAsync(u =>
+                u.ShortCode == shortCode &&
+                u.UserId == _currentUser.UserId &&
+                !u.IsDeleted &&
+                (!u.ExpiresAt.HasValue ||
+                 u.ExpiresAt > DateTime.UtcNow));
         }
     }
 }

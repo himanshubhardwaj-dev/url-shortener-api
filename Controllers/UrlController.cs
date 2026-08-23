@@ -59,7 +59,7 @@ namespace URLShortner.API.Controllers
         [HttpGet("{shortCode}/qrcode")]
         public async Task<IActionResult> GetQrCode(string shortCode)
         {
-            var url = await _urlService.GetByShortCodeAsync(shortCode);
+            var url = await _urlService.GetOwnedByShortAsync(shortCode);
             if (url == null)
             {
                 return NotFound();
@@ -78,6 +78,21 @@ namespace URLShortner.API.Controllers
             }
             analytics.ShortUrl = $"{Request.Scheme}://{Request.Host}/{analytics.ShortCode}";
             return Ok(analytics);
+        }
+        [HttpPut]
+        public async Task<IActionResult> Update(string shortCode, UpdateShortUrlRequestDto request)
+        {
+            try
+            {
+                var updated = await _urlService.UpdateAsync(shortCode, request);
+                if (!updated)
+                    return NotFound();
+                return NoContent();
+            }
+            catch(ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

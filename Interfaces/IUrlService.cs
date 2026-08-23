@@ -11,7 +11,8 @@ namespace URLShortner.API.Interfaces
         Task<bool> DeleteAsync(string shortCode);
 
         Task<PagedResponseDto<UrlListItemDto>> GetAllAsync(int pageNumber, int pageSize);
-        Task<Url?> GetByShortCodeAsync(string shortCode);
+        Task<Url?> GetOwnedByShortAsync(string shortCode);
         Task<UrlAnalyticsDto?> GetAnalyticsAsync(string shortCode);
+        Task<bool> UpdateAsync(string shortCode, UpdateShortUrlRequestDto request);
     }
 }
