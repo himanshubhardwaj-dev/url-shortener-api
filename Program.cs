@@ -15,6 +15,13 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AngularClient", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200", "http://localhost:52620").AllowAnyHeader().AllowAnyMethod();
+    });
+});
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHttpContextAccessor();
@@ -46,7 +53,7 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-builder.Services.AddDbContext<UrlShortnerDbContext>(option=> option.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddDbContext<UrlShortnerDbContext>(option => option.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddSingleton<IShortCodeGenerator, ShortCodeGenerator>();
 builder.Services.AddSingleton<IQRCodeService, QRCodeService>();
 builder.Services.Configure<ShortCodeOptions>(builder.Configuration.GetSection("ShortCode"));
@@ -74,7 +81,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
                 Encoding.UTF8.GetBytes(jwtOptions.Secretkey))
         };
     });
-builder.Services.AddAuthentication();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -87,6 +93,8 @@ if (app.Environment.IsDevelopment())
 app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseHttpsRedirection();
+
+app.UseCors("AngularClient");
 
 app.UseStaticFiles();
 
