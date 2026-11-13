@@ -130,7 +130,7 @@ namespace URLShortner.API.Services
         }
         public async Task<PagedResponseDto<UrlListItemDto>> GetAllAsync(int pageNumber, int pageSize)
         {
-            var query = _context.Urls.AsNoTracking().Where(ur => ur.UserId == _currentUser.UserId && !ur.IsDeleted );
+            var query = _context.Urls.AsNoTracking().Where(ur => ur.UserId == _currentUser.UserId && !ur.IsDeleted);
             var totalRecords = await query.CountAsync();
             var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
             var item = await query.OrderByDescending(ur => ur.CreatedAt)
@@ -141,7 +141,8 @@ namespace URLShortner.API.Services
                                      OriginalUrl = u.OriginalUrl,
                                      ShortCode = u.ShortCode,
                                      ClickCount = u.ClickCount,
-                                     CreatedAt = u.CreatedAt
+                                     CreatedAt = u.CreatedAt,
+                                     ExpiresAt = u.ExpiresAt
                                  }).ToListAsync();
             return new PagedResponseDto<UrlListItemDto>
             {
@@ -171,7 +172,7 @@ namespace URLShortner.API.Services
             var url = await _context.Urls.FirstOrDefaultAsync(u => u.ShortCode == shortCode && u.UserId == _currentUser.UserId && !u.IsDeleted);
             if (url == null)
                 return false;
-            if(request.ExpiresAt.HasValue && request.ExpiresAt.Value <= DateTime.UtcNow)
+            if (request.ExpiresAt.HasValue && request.ExpiresAt.Value <= DateTime.UtcNow)
             {
                 throw new ArgumentException("Expiration Date must be in future.", nameof(request.ExpiresAt));
             }
@@ -190,6 +191,29 @@ namespace URLShortner.API.Services
                 !u.IsDeleted &&
                 (!u.ExpiresAt.HasValue ||
                  u.ExpiresAt > DateTime.UtcNow));
+        }
+
+        public async Task<DashboardSummaryDto> GetDashboardSummaryAsync()
+        {
+            var query = _context.Urls.AsNoTracking().Where(url =>url.UserId == _currentUser.UserId &&!url.IsDeleted);
+
+            var currentDate = DateTime.UtcNow;
+
+            var totalUrls = await query.CountAsync();
+
+            var totalClicks = await query.SumAsync(url => (int?)url.ClickCount) ?? 0;
+
+            var activeUrls = await query.CountAsync(url => url.ExpiresAt == null || url.ExpiresAt > currentDate);
+
+            var expiredUrls = await query.CountAsync(url => url.ExpiresAt != null && url.ExpiresAt <= currentDate);
+
+            return new DashboardSummaryDto
+            {
+                TotalUrls = totalUrls,
+                TotalClicks = totalClicks,
+                ActiveUrls = activeUrls,
+                ExpiredUrls = expiredUrls
+            };
         }
     }
 }

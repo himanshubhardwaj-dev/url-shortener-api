@@ -14,5 +14,6 @@ namespace URLShortner.API.Interfaces
         Task<Url?> GetOwnedByShortAsync(string shortCode);
         Task<UrlAnalyticsDto?> GetAnalyticsAsync(string shortCode);
         Task<bool> UpdateAsync(string shortCode, UpdateShortUrlRequestDto request);
+        Task<DashboardSummaryDto> GetDashboardSummaryAsync();
     }
 }

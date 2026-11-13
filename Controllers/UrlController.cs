@@ -72,7 +72,7 @@ namespace URLShortner.API.Controllers
         public async Task<IActionResult> GetAnalytics(string shortCode)
         {
             var analytics = await _urlService.GetAnalyticsAsync(shortCode);
-                if(analytics == null)
+            if (analytics == null)
             {
                 return NotFound();
             }
@@ -89,10 +89,17 @@ namespace URLShortner.API.Controllers
                     return NotFound();
                 return NoContent();
             }
-            catch(ArgumentException ex)
+            catch (ArgumentException ex)
             {
                 return BadRequest(ex.Message);
             }
+        }
+        [HttpGet("dashboard-summary")]
+        public async Task<IActionResult> GetDashboardSummary()
+        {
+            var summary = await _urlService.GetDashboardSummaryAsync();
+
+            return Ok(summary);
         }
     }
 }
