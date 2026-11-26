@@ -11,6 +11,8 @@ namespace URLShortner.API.Services
         private readonly UrlShortnerDbContext _context;
         private readonly IPasswordHasher _passwordHasher;
         private readonly ITokenService _tokenservice;
+        private readonly ICurrentUserService _currentUserService;
+
         public AuthService(UrlShortnerDbContext context, IPasswordHasher passwordHasher, ITokenService tokenservice)
         {
             _context = context;
@@ -52,7 +54,7 @@ namespace URLShortner.API.Services
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
 
-            if(user == null)
+            if (user == null)
             {
                 throw new ArgumentException("Invalid Email or Password");
             }
@@ -76,6 +78,65 @@ namespace URLShortner.API.Services
                 Role = user.Role
             };
         }
+        public async Task<UserProfileDto> GetProfileAsync()
+        {
+            var user = await GetCurrentUserAsync();
+            return MapProfile(user);
+        }
 
+        public async Task<UserProfileDto> UpdateProfileAsync(UpdateProfileRequestDto request)
+        {
+            var user = await GetCurrentUserAsync();
+            var email = request.Email.Trim().ToLowerInvariant();
+
+            bool emailInUse = await _context.Users.AnyAsync(u =>
+                u.Id != user.Id && u.Email == email);
+
+            if (emailInUse)
+                throw new ArgumentException("This email address is already in use.");
+
+            user.FirstName = request.FirstName.Trim();
+            user.LastName = request.LastName.Trim();
+            user.Email = email;
+
+            await _context.SaveChangesAsync();
+            return MapProfile(user);
+        }
+
+        public async Task ChangePasswordAsync(ChangePasswordRequestDto request)
+        {
+            var user = await GetCurrentUserAsync();
+
+            if (!_passwordHasher.verify(request.CurrentPassword, user.PasswordHash))
+                throw new ArgumentException("Your current password is incorrect.");
+
+            if (_passwordHasher.verify(request.NewPassword, user.PasswordHash))
+                throw new ArgumentException("Your new password must be different from your current password.");
+
+            user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task<User> GetCurrentUserAsync()
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u =>
+                u.Id == _currentUserService.UserId);
+
+            return user ?? throw new KeyNotFoundException("The account could not be found.");
+        }
+
+        private static UserProfileDto MapProfile(User user)
+        {
+            return new UserProfileDto
+            {
+                UserId = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email,
+                Role = user.Role,
+                IsActive = user.isActive,
+                CreatedAt = user.CreatedAt
+            };
+        }
     }
 }

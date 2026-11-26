@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using URLShortner.API.DTOs.Auth;
 using URLShortner.API.Interfaces;
@@ -25,6 +26,27 @@ namespace URLShortner.API.Controllers
         {
             var response = await _authService.LoginAsync(request);
             return Ok(response);
+        }
+        [Authorize]
+        [HttpGet("me")]
+        public async Task<ActionResult<UserProfileDto>> GetProfile()
+        {
+            return Ok(await _authService.GetProfileAsync());
+        }
+
+        [Authorize]
+        [HttpPut("me/profile")]
+        public async Task<ActionResult<UserProfileDto>> UpdateProfile(UpdateProfileRequestDto request)
+        {
+            return Ok(await _authService.UpdateProfileAsync(request));
+        }
+
+        [Authorize]
+        [HttpPost("me/change-password")]
+        public async Task<IActionResult> ChangePassword(ChangePasswordRequestDto request)
+        {
+            await _authService.ChangePasswordAsync(request);
+            return NoContent();
         }
     }
 }

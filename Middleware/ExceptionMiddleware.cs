@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using System.Text.Json;
 using URLShortner.API.DTOs;
 using URLShortner.API.Exceptions;
@@ -27,6 +27,14 @@ namespace URLShortner.API.Middleware
             else if (ex is ArgumentException)
             {
                 return StatusCodes.Status400BadRequest;
+            }
+            else if (ex is KeyNotFoundException)
+            {
+                return StatusCodes.Status404NotFound;
+            }
+            else if (ex is UnauthorizedAccessException)
+            {
+                return StatusCodes.Status401Unauthorized;
             }
             else
             {
