@@ -10,17 +10,31 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.HttpOverrides;
 var builder = WebApplication.CreateBuilder(args);
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(port))
+{
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+}
 
+// Render's proxy handles HTTPS, so trust its forwarded headers
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 // Add services to the container.
 
 builder.Services.AddControllers();
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? new[] { "http://localhost:4200", "http://localhost:62149" };
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AngularClient", policy =>
-    {
-        policy.WithOrigins("http://localhost:4200", "http://localhost:52620").AllowAnyHeader().AllowAnyMethod();
-    });
+        policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod());
 });
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -82,9 +96,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
         };
     });
 var app = builder.Build();
-
+app.UseForwardedHeaders();
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("EnableSwagger"))
 {
     app.UseSwagger();
     app.UseSwaggerUI();
@@ -92,7 +106,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseMiddleware<ExceptionMiddleware>();
 
-app.UseHttpsRedirection();
 
 app.UseCors("AngularClient");
 
@@ -101,6 +114,8 @@ app.UseStaticFiles();
 app.UseAuthentication();
 
 app.UseAuthorization();
+
+app.MapGet("/health", () => Results.Ok("OK"));
 
 app.MapControllers();
 
