@@ -13,11 +13,12 @@ namespace URLShortner.API.Services
         private readonly ITokenService _tokenservice;
         private readonly ICurrentUserService _currentUserService;
 
-        public AuthService(UrlShortnerDbContext context, IPasswordHasher passwordHasher, ITokenService tokenservice)
+        public AuthService(UrlShortnerDbContext context, IPasswordHasher passwordHasher, ITokenService tokenservice, ICurrentUserService currentUserService)
         {
             _context = context;
             _passwordHasher = passwordHasher;
             _tokenservice = tokenservice;
+            _currentUserService = currentUserService;
         }
 
         public async Task<RegisterResponseDto> RegisterAsync(RegisterRequestDto request)
