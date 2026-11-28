@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using URLShortner.API.Data;
 using URLShortner.API.DTOs;
@@ -42,7 +42,7 @@ namespace URLShortner.API.Services
             }
             if (string.IsNullOrWhiteSpace(request.CustomShortCode))
             {
-                var existingUrl = await _context.Urls.FirstOrDefaultAsync(ur => ur.OriginalUrl == request.OriginalUrl && !ur.IsDeleted);
+                var existingUrl = await _context.Urls.FirstOrDefaultAsync(ur => ur.UserId == _currentUser.UserId && ur.OriginalUrl == request.OriginalUrl && !ur.IsDeleted);
                 if (existingUrl != null)
                 {
                     return new CreateShortUrlResponseDto
